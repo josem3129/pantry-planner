@@ -25,7 +25,7 @@ export default function MealPlannerPage() {
             )}
           >
             <List size={18} />
-            Option B
+            Day View
           </button>
 
           <button
@@ -36,7 +36,7 @@ export default function MealPlannerPage() {
             )}
           >
             <LayoutGrid size={18} />
-            Option C
+            Weekly View
           </button>
         </div>
       </div>
@@ -92,7 +92,7 @@ function DesktopMealPlannerB() {
     <div className="bg-white shadow p-6 rounded">
       <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
         <List />
-        Option B — List View
+        Today — List View
       </h2>
 
       <div className="space-y-3">
@@ -119,7 +119,7 @@ function DesktopMealPlannerC() {
     <div className="bg-white shadow p-6 rounded">
       <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
         <Calendar />
-        Option C — Weekly Grid
+        This Week — Weekly Grid
       </h2>
 
       <div className="grid grid-cols-7 gap-2">
