@@ -10,7 +10,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";    
 
-export interface calendarEntry {
+export interface CalendarEntry {
     id?: string;
     date: string;
     meal: "breakfast" | "lunch" | "dinner";
@@ -20,17 +20,17 @@ export interface calendarEntry {
 
 const calendarRef = collection(db, "calendar");
 
-export function subscribeToCalendar(cd: (items: calendar[]) => void){
+export function subscribeToCalendar(cd: (items: CalendarEntry[]) => void){
     return onSnapshot(calendarRef, (snapshot) => {
         const data = snapshot.docs.map((d) => ({
             id: d.id,
             ...d.data(),
-        })) as calendarEntry[];
+        })) as CalendarEntry[];
         cd(data);
     });
 }
 
-export async function addCalendarEntry(entry: calendarEntry){
+export async function addCalendarEntry(entry: CalendarEntry){
     return await addDoc(calendarRef, entry);
 }
 
@@ -38,6 +38,6 @@ export async function deleteCalendarEntry(id: string){
     return await deleteDoc(doc(calendarRef, id));
 }
 
-export async function updateCalendarEntry(id: string, updates: Partial<calendarEntry>){
+export async function updateCalendarEntry(id: string, updates: Partial<CalendarEntry>){
     return await updateDoc(doc(calendarRef, id), updates);
 }
