@@ -14,11 +14,36 @@ export default function RecipesPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
 
   const [newRecipe, setNewRecipe] = useState({
-    name: "",
+    title: "",
     description: "",
-    ingredients: [] as { pantryItemId: string; quantity: number }[],
+    ingredients: [] as {
+      pantryItemId: string;
+      quantity: number;
+      unit: string;
+    }[],
   });
 
+  const UNITS = [
+    { category: "Volume (US)", name: "Teaspoon", abbr: "tsp" },
+    { category: "Volume (US)", name: "Tablespoon", abbr: "tbsp" },
+    { category: "Volume (US)", name: "Fluid Ounce", abbr: "fl oz" },
+    { category: "Volume (US)", name: "Cup", abbr: "c" },
+    { category: "Volume (US)", name: "Pint", abbr: "pt" },
+    { category: "Volume (US)", name: "Quart", abbr: "qt" },
+    { category: "Volume (US)", name: "Gallon", abbr: "gal" },
+    { category: "Volume (US)", name: "Dash", abbr: "" },
+    { category: "Volume (US)", name: "Pinch", abbr: "" },
+    { category: "Volume (US)", name: "Drop", abbr: "" },
+
+    { category: "Weight (US)", name: "Ounce", abbr: "oz" },
+    { category: "Weight (US)", name: "Pound", abbr: "lb" },
+
+    { category: "Metric", name: "Gram", abbr: "g" },
+    { category: "Metric", name: "Kilogram", abbr: "kg" },
+    { category: "Metric", name: "Milliliter", abbr: "mL" },
+    { category: "Metric", name: "Liter", abbr: "L" },
+    { category: "Other", name: "Each", abbr: "ea" },
+  ];
   // Load pantry (for ingredient selection)
   useEffect(() => {
     const unsub = subscribeToPantry((items) => setPantry(items));
@@ -36,38 +61,47 @@ export default function RecipesPage() {
       ...newRecipe,
       ingredients: [
         ...newRecipe.ingredients,
-        { pantryItemId: pantry[0]?.id || "", quantity: 1 },
+        { pantryItemId: pantry[0]?.id || "", quantity: 1, unit: "" },
       ],
     });
   }
 
-  function updateIngredient(index: number, key: string, value: string | number) {
+  function updateIngredient(
+    index: number,
+    key: string,
+    value: string | number
+  ) {
     const updated = [...newRecipe.ingredients];
     const ingredient = updated[index];
+
     if (key === "pantryItemId") {
       ingredient.pantryItemId = value as string;
     } else if (key === "quantity") {
       ingredient.quantity = value as number;
+    } else if (key === "unit") {
+      ingredient.unit = value as string;
     }
+
     setNewRecipe({ ...newRecipe, ingredients: updated });
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!newRecipe.name.trim()) return;
+    if (!newRecipe.title.trim()) return;
 
     await addRecipe({
-      name: newRecipe.name,
+      title: newRecipe.title,
       description: newRecipe.description,
       ingredients: newRecipe.ingredients.map((i) => ({
         pantryItemId: i.pantryItemId,
         quantity: Number(i.quantity),
+        unit: i.unit,
       })),
     });
 
     // Reset form
-    setNewRecipe({ name: "", description: "", ingredients: [] });
+    setNewRecipe({ title: "", description: "", ingredients: [] });
   }
 
   return (
@@ -75,16 +109,17 @@ export default function RecipesPage() {
       <h1 className="text-3xl font-bold mb-6">Recipes</h1>
 
       {/* Create Recipe */}
-      <form onSubmit={handleSubmit} className="bg-white shadow p-4 rounded mb-6">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white shadow p-4 rounded mb-6"
+      >
         <h2 className="text-xl font-semibold mb-3">Add New Recipe</h2>
 
         <input
           type="text"
           placeholder="Recipe name"
-          value={newRecipe.name}
-          onChange={(e) =>
-            setNewRecipe({ ...newRecipe, name: e.target.value })
-          }
+          value={newRecipe.title}
+          onChange={(e) => setNewRecipe({ ...newRecipe, title: e.target.value })}
           className="border p-2 rounded w-full mb-3"
         />
 
@@ -123,6 +158,19 @@ export default function RecipesPage() {
               }
               className="border p-2 rounded w-1/2"
             />
+            {/* Unit */}
+            <select
+              value={ingredient.unit}
+              onChange={(e) => updateIngredient(index, "unit", e.target.value)}
+              className="border p-2 rounded w-1/3"
+            >
+              <option value="">Unit</option>
+              {UNITS.map((u, i) => (
+                <option key={i} value={u.abbr || u.name}>
+                  {u.name} {u.abbr ? `(${u.abbr})` : ""}
+                </option>
+              ))}
+            </select>
           </div>
         ))}
 
@@ -152,7 +200,7 @@ export default function RecipesPage() {
               className="border-b py-3 flex justify-between items-center"
             >
               <div>
-                <h3 className="font-semibold">{recipe.name}</h3>
+                <h3 className="font-semibold">{recipe.title}</h3>
                 <p className="text-gray-600 text-sm">
                   {recipe.ingredients.length} ingredients
                 </p>

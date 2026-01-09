@@ -14,6 +14,7 @@ import {
 
 //initialize pantry collection reference
 export interface PantryItem {
+  count: string | number | readonly string[] | undefined;
   id?: string;
   name: string;
   quantity: number;

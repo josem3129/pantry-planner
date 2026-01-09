@@ -19,7 +19,7 @@ export interface RecipeIngredient {
 
 export interface Recipe {
     id?: string;
-    name: string;
+    title: string;
     ingredients: RecipeIngredient[];
     description: string;
 }
@@ -27,7 +27,7 @@ export interface Recipe {
 const recipesCollection = collection(db, "recipes");
 
 export function subscribeToRecipes(callback: (items: Recipe[]) => void) {
-    const q = query(recipesCollection, orderBy("name"));
+    const q = query(recipesCollection, orderBy("title"));
     return onSnapshot(q, (snapshot) => {
         const items = snapshot.docs.map((d) => ({
             id: d.id,
@@ -38,7 +38,7 @@ export function subscribeToRecipes(callback: (items: Recipe[]) => void) {
 }
 
 export async function getRecipes(): Promise<Recipe[]> {
-    const q = query(recipesCollection, orderBy("name"));
+    const q = query(recipesCollection, orderBy("title"));
     const snapshot = await getDocs(q);
 
     return snapshot.docs.map((d) => ({
