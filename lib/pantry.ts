@@ -10,15 +10,31 @@ import {
   getDocs,
   query,
   orderBy,
+  where
 } from "firebase/firestore";
-
 //initialize pantry collection reference
 export interface PantryItem {
-  count: string | number | readonly string[] | undefined;
+  count: number
   id?: string;
   name: string;
   quantity: number;
   unit: string;
+  barcode?: string;
+}
+//find pantry item by barcode
+export async function findPantryItemByBarcode(barcode: string) : Promise<PantryItem | null> {
+  const q = query(pantryCollection, where("barcode", "==", barcode));
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) {
+    return null;
+  }
+
+  const doc = snapshot.docs[0];
+  return {
+    id: doc.id,
+    ...(doc.data() as PantryItem),
+  };
 }
 
 //collection reference
@@ -33,6 +49,18 @@ export async function getPantryItems(): Promise<PantryItem[]> {
     id: d.id,
     ...(d.data() as PantryItem),
   }));
+}
+//fetch pantry item by id
+export async function getPantryItemById(id: string): Promise<PantryItem | null> {
+    const ref = query(pantryCollection, where("id", "==", id));
+    const snap = await getDocs(ref);
+    if (snap.empty) {
+        return null;
+    }
+    return {
+        id: snap.docs[0].id,
+        ...(snap.docs[0].data() as PantryItem),
+    };
 }
 
 //real-time subscription

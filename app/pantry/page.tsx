@@ -8,8 +8,16 @@ import {
   updatePantryItem,
   deletePantryItem,
 } from "@/lib/pantry";
+import BarcodeScanner, {
+  ScannedProductData,
+} from "@/components/BarcodeScanner";
+import { upsertPantryItem } from "@/lib/pantryActions";
+import ConfirmScannedItemModal from "@/components/ConfirmScannedItemModal";
+import { ScannedItemDraft } from "@/components/ConfirmScannedItemModal";
+import { useCallback } from "react";
 
 export default function PantryPage() {
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [items, setItems] = useState<PantryItem[]>([]);
   const [newItem, setNewItem] = useState({
     name: "",
@@ -17,7 +25,14 @@ export default function PantryPage() {
     unit: "",
     count: "",
   });
+  const [draft, setDraft] = useState<ScannedProductData | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
+  const handleScannerSuccess = useCallback((data: ScannedProductData) => {
+    setDraft(data);
+    setScannerOpen(false); // This triggers the hook's "active: false" cleanup
+    setModalOpen(true);
+  }, []);
   const UNITS = [
     { category: "Volume (US)", name: "Teaspoon", abbr: "tsp" },
     { category: "Volume (US)", name: "Tablespoon", abbr: "tbsp" },
@@ -70,11 +85,68 @@ export default function PantryPage() {
   async function handleDelete(id: string) {
     await deletePantryItem(id);
   }
+  async function handleConfirm(item: ScannedItemDraft) {
+    try {
+      await upsertPantryItem({
+        name: item.name,
+        count: item.count,
+        quantity: item.quantity ?? 0,
+        unit: item.units ?? "pcs",
+        // 🛡️ Fix: convert null to undefined
+        barcode: item.barcode || undefined,
+      });
 
+      setModalOpen(false);
+    } catch (error) {
+      console.error("Error saving to pantry:", error);
+    }
+  }
+  let num = 0;
+  console.log("Confirmed scanned item:", draft, num++);
   return (
     <div className="max-w-3xl mx-auto p6">
       <h1 className="text-3xl font-bold mb-6">Pantry Inventory</h1>
       {/* Add Item Form */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setScannerOpen(true)}
+            className="px-4 py-2 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 transition"
+          >
+            📷 Scan Item
+          </button>
+        </div>
+      </div>
+
+      {/* THE SCANNER OVERLAY */}
+      {scannerOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-lg w-full max-w-md">
+            <BarcodeScanner
+              onClose={() => setScannerOpen(false)}
+              onSuccess={handleScannerSuccess}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* THE CONFIRMATION MODAL (Outside the scanner) */}
+      {modalOpen && draft && (
+        <ConfirmScannedItemModal
+          key={draft.barcode} // Resets form for every new scan
+          open={modalOpen}
+          barcode={draft.barcode}
+          initialName={draft.name}
+          initialQuantity={draft.quantity}
+          initialUnit={draft.unit}
+          onConfirm={async (item) => {
+            await handleConfirm(item);
+            setModalOpen(false);
+          }}
+          onCancel={() => setModalOpen(false)}
+        />
+      )}
+
       <form
         onSubmit={handleAddItem}
         className="shadow p-4 rounded mb-6 grid grid-cols-3 gap-3"
