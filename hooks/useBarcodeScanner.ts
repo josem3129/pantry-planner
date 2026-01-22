@@ -8,7 +8,7 @@ export function UseBarcodeScanner(
 ) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
-
+  console.log("UseBarcodeScanner active:", active);
   useEffect(() => {
     // If not active, ensure we clean up and exit
     if (!active) {

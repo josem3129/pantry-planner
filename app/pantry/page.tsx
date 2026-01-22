@@ -101,8 +101,6 @@ export default function PantryPage() {
       console.error("Error saving to pantry:", error);
     }
   }
-  let num = 0;
-  console.log("Confirmed scanned item:", draft, num++);
   return (
     <div className="max-w-3xl mx-auto p6">
       <h1 className="text-3xl font-bold mb-6">Pantry Inventory</h1>

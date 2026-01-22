@@ -29,7 +29,6 @@ export default function BarcodeScanner({ onClose, onSuccess }: BarcodeScannerPro
 
     const product = await lookupProductByBarcode(code);
 
-    console.log("Scanned barcode:", code, "Product data:", product);
     if (product) {
       onSuccess({
         barcode: code,
