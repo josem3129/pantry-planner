@@ -77,18 +77,25 @@ export function UseBarcodeScanner(
     setupCamera();
 
     return () => {
-      if (controlsRef.current) {
-        controlsRef.current.stop();
-        controlsRef.current = null;
-      }
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach((track) => {
-          track.stop(); // This physically turns off the camera light
-        });
-        videoRef.current.srcObject = null;
-      }
-    };
+  console.log("Cleaning up camera...");
+  if (controlsRef.current) {
+    controlsRef.current.stop();
+    controlsRef.current = null;
+  }
+  
+  if (videoRef.current) {
+    const stream = videoRef.current.srcObject as MediaStream;
+    if (stream) {
+      // Forcefully kill every track
+      stream.getTracks().forEach((track) => {
+        track.stop();
+        track.enabled = false; // Extra safety
+      });
+    }
+    videoRef.current.srcObject = null; // Break the DOM link
+    videoRef.current.load(); // Forces the video element to reset
+  }
+};
   }, [active, onDetected]);
 
   return { videoRef };
