@@ -21,6 +21,10 @@ type BarcodeScannerProps = {
 export default function BarcodeScanner({ onClose, onSuccess }: BarcodeScannerProps) {
   const [scanning, setScanning] = useState(true);
 
+  const handleHardReload = () => {
+  window.location.reload();
+};
+
   // We use the hook to handle the camera lifecycle
   const onDetected = useCallback(async (code: string) => {
     if (!scanning) return;
@@ -58,7 +62,7 @@ export default function BarcodeScanner({ onClose, onSuccess }: BarcodeScannerPro
 
       
       <button 
-        onClick={onClose} 
+        onClick={handleHardReload} 
         className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded transition"
       >
         Cancel

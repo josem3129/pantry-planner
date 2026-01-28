@@ -13,7 +13,6 @@ export function UseBarcodeScanner(
     // If not active, ensure we clean up and exit
     if (!active) {
       if (controlsRef.current) {
-        controlsRef.current.stop();
         controlsRef.current = null;
       }
       return;
