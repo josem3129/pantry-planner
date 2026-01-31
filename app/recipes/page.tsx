@@ -49,17 +49,27 @@ export default function RecipesPage() {
   ];
   // Load pantry (for ingredient selection)
   useEffect(() => {
-     if (!userId) return;
-    const unsub = subscribeToPantry(userId, (items) => setPantry(items));
-    return () => unsub();
-  }, []);
+  if (!userId) return;
+
+  const unsub = subscribeToPantry(userId, (items) => {
+    setPantry(items);
+  });
+
+  return () => unsub();
+}, [userId]);
+
 
   // Load recipes (real-time)
   useEffect(() => {
-     if (!userId) return;
-    const unsub = subscribeToRecipes(userId, (items) => setRecipes(items));
-    return () => unsub();
-  }, []);
+  if (!userId) return;
+
+  const unsub = subscribeToRecipes(userId, (items) => {
+    setRecipes(items);
+  });
+
+  return () => unsub();
+}, [userId]);
+
 
   function addIngredientField() {
     setNewRecipe({
