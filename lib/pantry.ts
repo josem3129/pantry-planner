@@ -22,8 +22,8 @@ export interface PantryItem {
   barcode?: string;
 }
 //find pantry item by barcode
-export async function findPantryItemByBarcode(barcode: string) : Promise<PantryItem | null> {
-  const q = query(pantryCollection, where("barcode", "==", barcode));
+export async function findPantryItemByBarcode(userId: string, barcode: string) : Promise<PantryItem | null> {
+  const q = query(pantryCollection(userId), where("barcode", "==", barcode));
   const snapshot = await getDocs(q);
 
   if (snapshot.empty) {
@@ -38,11 +38,11 @@ export async function findPantryItemByBarcode(barcode: string) : Promise<PantryI
 }
 
 //collection reference
-const pantryCollection = collection(db, "pantry");
+const pantryCollection = (userId: string) => collection(db, `users/${userId}/pantry`);
 
 // one-time fetch 
-export async function getPantryItems(): Promise<PantryItem[]> {
-  const q = query(pantryCollection, orderBy("name"));
+export async function getPantryItems(userId: string): Promise<PantryItem[]> {
+  const q = query(pantryCollection(userId), orderBy("name"));
   const snapshot = await getDocs(q);
 
   return snapshot.docs.map((d) => ({
@@ -51,8 +51,8 @@ export async function getPantryItems(): Promise<PantryItem[]> {
   }));
 }
 //fetch pantry item by id
-export async function getPantryItemById(id: string): Promise<PantryItem | null> {
-    const ref = query(pantryCollection, where("id", "==", id));
+export async function getPantryItemById(userId: string, id: string): Promise<PantryItem | null> {
+    const ref = query(pantryCollection(userId), where("id", "==", id));
     const snap = await getDocs(ref);
     if (snap.empty) {
         return null;
@@ -64,8 +64,8 @@ export async function getPantryItemById(id: string): Promise<PantryItem | null> 
 }
 
 //real-time subscription
-export function subscribeToPantry(callback: (items: PantryItem[]) => void) {
-    const q = query(pantryCollection, orderBy("name"));
+export function subscribeToPantry(userId: string, callback: (items: PantryItem[]) => void) {
+    const q = query(pantryCollection(userId), orderBy("name"));
     return onSnapshot(q, (snapshot) => {
         const items = snapshot.docs.map((d) => ({
             id: d.id,
@@ -76,18 +76,18 @@ export function subscribeToPantry(callback: (items: PantryItem[]) => void) {
 }
 
 //add pantry item
-export async function addPantryItem(item: Omit<PantryItem, "id">) {
-    return await addDoc(pantryCollection, item);
+export async function addPantryItem(userId: string, item: Omit<PantryItem, "id">) {
+    return await addDoc(pantryCollection(userId), item);
 }
 
 //update pantry item
-export async function updatePantryItem(id: string, updates: Partial<PantryItem>) {
-    const ref = doc(db, "pantry", id);
+export async function updatePantryItem(userId: string, id: string, updates: Partial<PantryItem>) {
+    const ref = doc(db, "users", userId, "pantry", id);
     return await updateDoc(ref, updates);
 }
 
 //delete pantry item
-export async function deletePantryItem(id: string) {
-    const ref = doc(db, "pantry", id);
+export async function deletePantryItem(userId: string, id: string) {
+    const ref = doc(db, "users", userId, "pantry", id);
     return await deleteDoc(ref);
 }

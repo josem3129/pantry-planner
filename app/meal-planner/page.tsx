@@ -5,6 +5,7 @@ import { Calendar, List, LayoutGrid } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { addCalendarEntry, confirmMealAndConsume, subscribeToPantry, subscribeToRecipes, subscribeToCalendarDate, PantryItem, Recipe, CalendarEntry } from "@/lib/firestore";
 import { format, startOfWeek, addDays } from "date-fns";
+import { useAuth } from "@/lib/useAuth";
 
 type MealType = "breakfast" | "lunch" | "dinner";
 
@@ -12,6 +13,7 @@ export default function MealPlannerPage() {
   // Desktop view mode toggle
   const [viewMode, setViewMode] = useState<"B" | "C">("B");
   
+
   return (
     <div className="p-4 max-w-6xl mx-auto">
 
@@ -73,10 +75,13 @@ function MobileCalendarPage() {
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState<{ meal: MealType; recipeId: string }>({ meal: "breakfast", recipeId: "" });
   const [working, setWorking] = useState(false);
+  const { user } = useAuth();
+  const userId = user?.uid || "";
 
   useEffect(() => {
-    const unsubPantry = subscribeToPantry((items) => setPantry(items));
-    const unsubRecipes = subscribeToRecipes((rs) => setRecipes(rs));
+    if (!userId) return;
+    const unsubPantry = subscribeToPantry(userId, (items) => setPantry(items));
+    const unsubRecipes = subscribeToRecipes(userId, (rs) => setRecipes(rs));
     return () => {
       unsubPantry();
       unsubRecipes();
@@ -84,9 +89,10 @@ function MobileCalendarPage() {
   }, []);
 
   useEffect(() => {
-    const unsub = subscribeToCalendarDate(selectedDate, (es) => setEntries(es));
+     if (!userId) return;
+    const unsub = subscribeToCalendarDate(userId, selectedDate, (es) => setEntries(es));
     return () => unsub();
-  }, [selectedDate]);
+  }, [selectedDate, userId]);
 
   const week = useMemo(() => {
     const start = startOfWeek(new Date(), { weekStartsOn: 1 }); // Monday
@@ -100,7 +106,7 @@ function MobileCalendarPage() {
     if (!form.recipeId) return alert("Select a recipe");
     setWorking(true);
     try {
-      await addCalendarEntry({ date: selectedDate, meal: form.meal, recipeId: form.recipeId });
+      await addCalendarEntry(userId, { date: selectedDate, meal: form.meal, recipeId: form.recipeId });
       setAdding(false);
     } catch (err) {
       console.error("Add calendar error", err);
@@ -113,7 +119,7 @@ function MobileCalendarPage() {
   async function handleConfirm(entryId: string) {
     setWorking(true);
     try {
-      await confirmMealAndConsume(entryId);
+      await confirmMealAndConsume(userId, entryId);
       alert("Meal confirmed and pantry updated.");
     } catch (err) {
       console.error("Confirm error", err);

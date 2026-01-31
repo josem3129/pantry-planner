@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { PantryItem, subscribeToPantry } from "@/lib/pantry";
+import { useAuth } from "@/lib/useAuth";
 import {
   Recipe,
   addRecipe,
@@ -12,6 +13,8 @@ import {
 export default function RecipesPage() {
   const [pantry, setPantry] = useState<PantryItem[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const { user } = useAuth(); 
+  const userId = user?.uid || "";
 
   const [newRecipe, setNewRecipe] = useState({
     title: "",
@@ -46,13 +49,15 @@ export default function RecipesPage() {
   ];
   // Load pantry (for ingredient selection)
   useEffect(() => {
-    const unsub = subscribeToPantry((items) => setPantry(items));
+     if (!userId) return;
+    const unsub = subscribeToPantry(userId, (items) => setPantry(items));
     return () => unsub();
   }, []);
 
   // Load recipes (real-time)
   useEffect(() => {
-    const unsub = subscribeToRecipes((items) => setRecipes(items));
+     if (!userId) return;
+    const unsub = subscribeToRecipes(userId, (items) => setRecipes(items));
     return () => unsub();
   }, []);
 
@@ -90,7 +95,7 @@ export default function RecipesPage() {
 
     if (!newRecipe.title.trim()) return;
 
-    await addRecipe({
+    await addRecipe(userId, {
       title: newRecipe.title,
       description: newRecipe.description,
       ingredients: newRecipe.ingredients.map((i) => ({
@@ -207,7 +212,7 @@ export default function RecipesPage() {
               </div>
 
               <button
-                onClick={() => deleteRecipe(recipe.id!)}
+                onClick={() => deleteRecipe(userId, recipe.id!)}
                 className="text-red-600 hover:underline"
               >
                 Delete

@@ -18,10 +18,10 @@ export interface CalendarEntry {
     confirmed: boolean;
 }
 
-const calendarRef = collection(db, "calendar");
+const calendarRef = (userId: string) => collection(db, `users/${userId}/calendar`);
 
-export function subscribeToCalendar(cd: (items: CalendarEntry[]) => void){
-    return onSnapshot(calendarRef, (snapshot) => {
+export function subscribeToCalendar(userId: string, cd: (items: CalendarEntry[]) => void){
+    return onSnapshot(calendarRef(userId), (snapshot) => {
         const data = snapshot.docs.map((d) => ({
             id: d.id,
             ...d.data(),
@@ -30,14 +30,14 @@ export function subscribeToCalendar(cd: (items: CalendarEntry[]) => void){
     });
 }
 
-export async function addCalendarEntry(entry: CalendarEntry){
-    return await addDoc(calendarRef, entry);
+export async function addCalendarEntry(userId: string, entry: CalendarEntry){
+    return await addDoc(calendarRef(userId), entry);
 }
 
-export async function deleteCalendarEntry(id: string){
-    return await deleteDoc(doc(calendarRef, id));
+export async function deleteCalendarEntry(userId: string, id: string){
+    return await deleteDoc(doc(calendarRef(userId), id));
 }
 
-export async function updateCalendarEntry(id: string, updates: Partial<CalendarEntry>){
-    return await updateDoc(doc(calendarRef, id), updates);
+export async function updateCalendarEntry(userId: string, id: string, updates: Partial<CalendarEntry>){
+    return await updateDoc(doc(calendarRef(userId), id), updates);
 }

@@ -15,6 +15,7 @@ import { upsertPantryItem } from "@/lib/pantryActions";
 import ConfirmScannedItemModal from "@/components/ConfirmScannedItemModal";
 import { ScannedItemDraft } from "@/components/ConfirmScannedItemModal";
 import { useCallback } from "react";
+import { useAuth } from "@/lib/useAuth";
 
 export default function PantryPage() {
   const [scannerOpen, setScannerOpen] = useState(false);
@@ -27,11 +28,18 @@ export default function PantryPage() {
   });
   const [draft, setDraft] = useState<ScannedProductData | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const { user } = useAuth();
+  const userId = user?.uid || "";
 
   const handleScannerSuccess = useCallback((data: ScannedProductData) => {
+    // 1. We keep the scanner open for a split second while it finishes its internal cleanup
     setDraft(data);
-    setScannerOpen(false); // This triggers the hook's "active: false" cleanup
-    setModalOpen(true);
+
+    // 2. Delay the UI switch
+    setTimeout(() => {
+      setScannerOpen(false); // This unmounts the scanner
+      setModalOpen(true); // This opens the confirmation modal
+    }, 150); // 150ms buffer for hardware release
   }, []);
   const UNITS = [
     { category: "Volume (US)", name: "Teaspoon", abbr: "tsp" },
@@ -56,17 +64,17 @@ export default function PantryPage() {
   ];
   // Listen to firestore updates in real-time
   useEffect(() => {
-    const unsubscribe = subscribeToPantry((data) => {
+    if (!userId) return;
+    const unsubscribe = subscribeToPantry(userId, (data) => {
       setItems(data);
     });
     return () => unsubscribe();
-  }, []);
-
+  }, [userId]);
   //handle adding new item
   async function handleAddItem(e: React.FormEvent) {
     e.preventDefault();
     if (!newItem.name.trim()) return;
-    await addPantryItem({
+    await addPantryItem(userId, {
       name: newItem.name,
       quantity: Number(newItem.quantity) || 0,
       unit: newItem.unit || "",
@@ -76,18 +84,18 @@ export default function PantryPage() {
   }
 
   async function handleUpdateQuantity(id: string, qty: number) {
-    await updatePantryItem(id, { quantity: qty });
+    await updatePantryItem(userId, id, { quantity: qty });
   }
 
   async function handleUpdateCount(id: string, count: number) {
-    await updatePantryItem(id, { count: count });
+    await updatePantryItem(userId, id, { count: count });
   }
   async function handleDelete(id: string) {
-    await deletePantryItem(id);
+    await deletePantryItem(userId, id);
   }
   async function handleConfirm(item: ScannedItemDraft) {
     try {
-      await upsertPantryItem({
+      await upsertPantryItem(userId, {
         name: item.name,
         count: item.count,
         quantity: item.quantity ?? 0,

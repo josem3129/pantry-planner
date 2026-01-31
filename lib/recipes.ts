@@ -24,10 +24,10 @@ export interface Recipe {
     description: string;
 }
 
-const recipesCollection = collection(db, "recipes");
+const recipesCollection = (userId: string) => collection(db, `users/${userId}/recipes`);
 
-export function subscribeToRecipes(callback: (items: Recipe[]) => void) {
-    const q = query(recipesCollection, orderBy("title"));
+export function subscribeToRecipes(userId: string, callback: (items: Recipe[]) => void) {
+    const q = query(recipesCollection(userId), orderBy("title"));
     return onSnapshot(q, (snapshot) => {
         const items = snapshot.docs.map((d) => ({
             id: d.id,
@@ -37,8 +37,8 @@ export function subscribeToRecipes(callback: (items: Recipe[]) => void) {
     });
 }
 
-export async function getRecipes(): Promise<Recipe[]> {
-    const q = query(recipesCollection, orderBy("title"));
+export async function getRecipes(userId: string): Promise<Recipe[]> {
+    const q = query(recipesCollection(userId), orderBy("title"));
     const snapshot = await getDocs(q);
 
     return snapshot.docs.map((d) => ({
@@ -48,18 +48,18 @@ export async function getRecipes(): Promise<Recipe[]> {
 }
 
 //adding recipe
-export async function addRecipe(recipe: Omit<Recipe, "id">) {
-    return await addDoc(recipesCollection, recipe);
+export async function addRecipe(userId: string, recipe: Omit<Recipe, "id">) {
+    return await addDoc(recipesCollection(userId), recipe);
 }
 
 //updating recipe
-export async function updateRecipe(id: string, updates: Partial<Recipe>) {
-    const ref = doc(db, "recipes", id);
+export async function updateRecipe(userId: string, id: string, updates: Partial<Recipe>) {
+    const ref = doc(db, "users", userId, "recipes", id);
     return await updateDoc(ref, updates);
 }
 
 //deleting recipe
-export async function deleteRecipe(id: string) {
-    const ref = doc(db, "recipes", id);
+export async function deleteRecipe(userId: string, id: string) {
+    const ref = doc(db, "users", userId, "recipes", id);
     return await deleteDoc(ref);
 }

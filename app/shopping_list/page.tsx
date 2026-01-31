@@ -2,12 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { subscribeToPantry, PantryItem } from "@/lib/firestore";
+import { useAuth } from "@/lib/useAuth";
 
 export default function ShoppingListPage() {
   const [items, setItems] = useState<PantryItem[]>([]);
+  const { user } = useAuth(); 
+  const userId = user?.uid || "";
 
   useEffect(() => {
-    return subscribeToPantry((pantry) => {
+     if (!userId) return;
+    return subscribeToPantry(userId, (pantry) => {
       const needsRestock = pantry.filter(
         (item) => item.quantity <= (item.low_threshold ?? 0)
       );

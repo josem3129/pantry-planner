@@ -93,6 +93,8 @@ export function UseBarcodeScanner(
     }
     videoRef.current.srcObject = null; // Break the DOM link
     videoRef.current.load(); // Forces the video element to reset
+    
+    
   }
 };
   }, [active, onDetected]);

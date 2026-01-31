@@ -56,6 +56,7 @@ function handleConfirm() {
     units: unit,
     barcode: barcode || undefined,
   });
+  debugger
 }
 
 
@@ -141,20 +142,6 @@ function handleConfirm() {
             </select>
           </div>
         </div>
-
-        {/* Category (optional)
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">
-            Category (optional)
-          </label>
-          <input
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full border rounded px-3 py-2"
-            placeholder="e.g. Dairy, Produce"
-          />
-        </div> */}
-
         {/* Barcode */}
         <div className="text-xs text-gray-500 mb-4">
           Barcode: {barcode}

@@ -13,6 +13,7 @@ import {
   deleteCalendarEntry,
 } from "@/lib/firestore";
 import { format, startOfWeek, addDays } from "date-fns";
+import { useAuth } from "@/lib/useAuth";
 
 /* ---------------- Types ---------------- */
 type MealType = "breakfast" | "lunch" | "dinner";
@@ -20,11 +21,12 @@ type MealType = "breakfast" | "lunch" | "dinner";
 /* ---------------- Page ---------------- */
 export default function MealPlannerPage() {
   const [viewMode, setViewMode] = useState<"B" | "C">("B");
+  const { user, loading } = useAuth();
+  const userId = user?.uid || "";
 
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [entries, setEntries] = useState<CalendarEntry[]>([]);
   const today = isoToday();
-
   /* --- Week helper --- */
   const week = useMemo(() => {
     const today = new Date();
@@ -41,13 +43,15 @@ export default function MealPlannerPage() {
 
   /* --- Recipes --- */
   useEffect(() => {
-    return subscribeToRecipes(setRecipes);
+     if (!userId) return;
+    return subscribeToRecipes(userId, setRecipes);
   }, []);
 
   /* --- Calendar entries (WHOLE WEEK) --- */
   useEffect(() => {
+     if (!userId) return;
     const unsubs = week.map((d) =>
-      subscribeToCalendarDate(d.iso, (dayEntries: CalendarEntry[]) => {
+      subscribeToCalendarDate(userId, d.iso, (dayEntries: CalendarEntry[]) => {
         setEntries((prev) => [
           ...prev.filter((e) => e.date !== d.iso),
           ...dayEntries,
@@ -64,7 +68,7 @@ export default function MealPlannerPage() {
         <h1 className="text-3xl font-bold">Meal Planner</h1>
           <AddMealPanel
             recipes={recipes}
-            onAdd={(data) => addCalendarEntry(data)}
+            onAdd={(data) => addCalendarEntry(userId, data)}
           />
 
         <div className="hidden md:flex md:flex-col-reverse gap-2 items-end">
@@ -100,10 +104,10 @@ export default function MealPlannerPage() {
       {/* Desktop */}
       <div className="hidden md:block">
         {viewMode === "B" && (
-          <DesktopDayView date={today} recipes={recipes} entries={entries} />
+          <DesktopDayView userId={userId} date={today} recipes={recipes} entries={entries} />
         )}
         {viewMode === "C" && (
-          <DesktopWeekView recipes={recipes} entries={entries} week={week} />
+          <DesktopWeekView userId={userId} recipes={recipes} entries={entries} week={week} />
         )}
       </div>
     </div>
@@ -146,10 +150,12 @@ function DesktopDayView({
   date,
   recipes,
   entries,
+  userId,
 }: {
   date: string;
   recipes: Recipe[];
   entries: CalendarEntry[];
+  userId: string;
 }) {
   const todaysMeals = entriesForDate(entries, date);
 
@@ -170,7 +176,7 @@ function DesktopDayView({
                 {!entry.confirmed && (
                   <div className="flex gap-2 mt-2">
                     <button
-                      onClick={() => confirmMealAndConsume(entry.id)}
+                      onClick={() => confirmMealAndConsume(userId, entry.id)}
                       className="px-4 py-1.5 text-xs font-medium bg-green-600 text-white 
                               rounded-full shadow-sm hover:bg-green-700 hover:shadow transition-all"
                     >
@@ -178,7 +184,7 @@ function DesktopDayView({
                     </button>
 
                     <button
-                      onClick={() => deleteCalendarEntry(entry.id)}
+                      onClick={() => deleteCalendarEntry(userId, entry.id)}
                       className="px-4 py-1.5 text-xs font-medium rounded-full 
                               border border-red-300 text-red-600 
                               hover:bg-red-50 transition-all"
@@ -205,10 +211,12 @@ function DesktopWeekView({
   recipes,
   entries,
   week,
+  userId,
 }: {
   recipes: Recipe[];
   entries: CalendarEntry[];
   week: { iso: string; label: string }[];
+  userId: string;
 }) {
   return (
     <div className="bg-white p-6 rounded shadow">
@@ -243,14 +251,14 @@ function DesktopWeekView({
                       {!mealEntry.confirmed && (
                         <div className="flex flex-col gap-2 mt-2 w-full">
                           <button
-                            onClick={() => confirmMealAndConsume(mealEntry.id)}
+                            onClick={() => confirmMealAndConsume(userId, mealEntry.id)}
                             className="flex-1 px-2 py-1 text-xs bg-green-600 text-white rounded-full hover:bg-green-700"
                           >
                             Confirm
                           </button>
 
                           <button
-                            onClick={() => deleteCalendarEntry(mealEntry.id)}
+                            onClick={() => deleteCalendarEntry(userId, mealEntry.id)}
                             className="flex-1 px-2 py-1 text-xs border border-red-300 text-red-600 rounded-full hover:bg-red-50"
                           >
                             Cancel

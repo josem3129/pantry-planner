@@ -4,7 +4,6 @@ import {
   addDoc,
   collection,
   doc,
-  getDoc,
   getDocs,
   onSnapshot,
   orderBy,
@@ -12,7 +11,6 @@ import {
   runTransaction,
   serverTimestamp,
   setDoc,
-  updateDoc,
   where,
   DocumentData,
   QuerySnapshot,
@@ -60,19 +58,25 @@ export interface CalendarEntry {
   createdAt?: string | number | boolean | null | undefined;
 }
 
+//Helper to get User-specific collections could be added here
+const getUserCollection = (userId: string, collectionName: string) => {
+  return collection(db, `users/${userId}/${collectionName}`);
+};
 /* ------------------------
    Collections helpers
    ------------------------ */
 
-const pantryCol = collection(db, "pantry");
-const recipesCol = collection(db, "recipes");
-const calendarCol = collection(db, "calendar");
-const shoppingCol = collection(db, "shoppingList");
+const pantryCol = (userId: string) => getUserCollection(userId, "pantry");
+const recipesCol = (userId: string) => getUserCollection(userId, "recipes");
+const calendarCol = (userId: string) => getUserCollection(userId, "calendar");
+// const shoppingCol = (userId: string) => getUserCollection(userId, "shopping_list");
 
 /* PANTRY */
 
-export async function getPantryItemsOnce(): Promise<PantryItem[]> {
-  const snap = await getDocs(query(pantryCol, orderBy("name")));
+export async function getPantryItemsOnce(
+  userId: string,
+): Promise<PantryItem[]> {
+  const snap = await getDocs(query(pantryCol(userId), orderBy("name")));
   return snap.docs.map((d) => ({
     id: d.id,
     ...(d.data() as DocumentData),
@@ -80,25 +84,26 @@ export async function getPantryItemsOnce(): Promise<PantryItem[]> {
 }
 
 export function subscribeToPantry(
-  callback: (items: PantryItem[]) => void
+  UserId: string,
+  callback: (items: PantryItem[]) => void,
 ): Unsubscribe {
   return onSnapshot(
-    query(pantryCol, orderBy("name")),
+    query(pantryCol(UserId), orderBy("name")),
     (snap: QuerySnapshot) => {
       callback(
         snap.docs.map((d) => ({
           id: d.id,
           ...(d.data() as DocumentData),
-        })) as PantryItem[]
+        })) as PantryItem[],
       );
-    }
+    },
   );
 }
 
 /* RECIPES */
 
-export async function getRecipesOnce(): Promise<Recipe[]> {
-  const snap = await getDocs(query(recipesCol, orderBy("title")));
+export async function getRecipesOnce(userId: string): Promise<Recipe[]> {
+  const snap = await getDocs(query(recipesCol(userId), orderBy("title")));
   return snap.docs.map((d) => ({
     id: d.id,
     ...(d.data() as DocumentData),
@@ -106,14 +111,15 @@ export async function getRecipesOnce(): Promise<Recipe[]> {
 }
 
 export function subscribeToRecipes(
-  callback: (recipes: Recipe[]) => void
+  userId: string,
+  callback: (recipes: Recipe[]) => void,
 ): Unsubscribe {
-  return onSnapshot(query(recipesCol, orderBy("title")), (snap) => {
+  return onSnapshot(query(recipesCol(userId), orderBy("title")), (snap) => {
     callback(
       snap.docs.map((d) => ({
         id: d.id,
         ...(d.data() as DocumentData),
-      })) as Recipe[]
+      })) as Recipe[],
     );
   });
 }
@@ -121,9 +127,10 @@ export function subscribeToRecipes(
 /* CALENDAR */
 
 export async function addCalendarEntry(
-  entry: Omit<CalendarEntry, "id" | "createdAt">
+  userId: string,
+  entry: Omit<CalendarEntry, "id" | "createdAt">,
 ) {
-  return await addDoc(calendarCol, {
+  return await addDoc(calendarCol(userId), {
     ...entry,
     confirmed: false,
     createdAt: serverTimestamp(),
@@ -131,29 +138,34 @@ export async function addCalendarEntry(
 }
 
 export function subscribeToCalendarDate(
+  userId: string,
   date: string,
-  callback: (entries: CalendarEntry[]) => void
+  callback: (entries: CalendarEntry[]) => void,
 ): Unsubscribe {
-  const q = query(calendarCol, where("date", "==", date), orderBy("meal"));
+  const q = query(
+    calendarCol(userId),
+    where("date", "==", date),
+    orderBy("meal"),
+  );
   return onSnapshot(q, (snap) => {
     callback(
       snap.docs.map((d) => ({
         id: d.id,
         ...(d.data() as DocumentData),
-      })) as CalendarEntry[]
+      })) as CalendarEntry[],
     );
   });
 }
 
-export async function deleteCalendarEntry(id: string) {
-  await deleteDoc(doc(db, "calendar", id));
+export async function deleteCalendarEntry(id: string, userId: string) {
+  await deleteDoc(doc(db, "users", userId, "calendar", id));
 }
 
 /* SHOPPING LIST helpers (derived) */
 export async function addOrMarkShoppingItem(
   itemName: string,
   unit?: string,
-  qty = 1
+  qty = 1,
 ) {
   // Create a simple shopping item with itemName as doc ID (slug) to avoid duplicates
   const id = itemName.toLowerCase().replace(/\s+/g, "_");
@@ -167,12 +179,12 @@ export async function addOrMarkShoppingItem(
       needed: true,
       updatedAt: serverTimestamp(),
     },
-    { merge: true }
+    { merge: true },
   );
 }
 // Confirm meal and consume pantry items transactionally
-export async function confirmMealAndConsume(entryId: string) {
-  const entryRef = doc(db, "calendar", entryId);
+export async function confirmMealAndConsume(entryId: string, userId: string) {
+  const entryRef = doc(db, "users", userId, "calendar", entryId);
   const UNIT_CONVERSIONS: Record<string, number> = {
     // Volume (base: milliliter)
     mL: 1,
@@ -204,7 +216,7 @@ export async function confirmMealAndConsume(entryId: string) {
     const entry = entrySnap.data() as CalendarEntry;
 
     // 2. ------ READ RECIPE ------
-    const recipeRef = doc(db, "recipes", entry.recipeId);
+    const recipeRef = doc(db, "users", userId, "recipes", entry.recipeId);
     const recipeSnap = await tx.get(recipeRef);
     if (!recipeSnap.exists()) throw new Error("Recipe not found");
     const recipe = recipeSnap.data() as Recipe;
@@ -214,7 +226,7 @@ export async function confirmMealAndConsume(entryId: string) {
 
     for (const ing of recipe.ingredients) {
       if (ing.pantryItemId) {
-        const pRef = doc(db, "pantry", ing.pantryItemId);
+        const pRef = doc(db, "users", userId, "pantry", ing.pantryItemId);
         const pSnap = await tx.get(pRef);
 
         pantryReadMap[ing.pantryItemId] = pSnap.exists()
@@ -231,7 +243,7 @@ export async function confirmMealAndConsume(entryId: string) {
       let pantryData: PantryItem | null = null;
 
       if (ing.pantryItemId && pantryReadMap[ing.pantryItemId]) {
-        pantryDocRef = doc(db, "pantry", ing.pantryItemId);
+        pantryDocRef = doc(db, "users", userId, "pantry", ing.pantryItemId);
         pantryData = pantryReadMap[ing.pantryItemId]!;
       }
       if (pantryDocRef && pantryData) {
@@ -241,16 +253,11 @@ export async function confirmMealAndConsume(entryId: string) {
           "Pantry data:",
           pantryData,
           "Id:",
-          ing.pantryItemId
+          ing.pantryItemId,
         );
         // Convert pantry quantity to base unit
         if (!ing.unit) throw new Error("Ingredient unit missing");
         if (!pantryData.unit) throw new Error("Pantry unit missing");
-
-        const pantryQtyBase = convertToBase(
-          pantryData.quantity,
-          pantryData.unit
-        );
 
         // Convert recipe ingredient quantity to base unit
         const recipeBase = convertToBase(ing.quantity, ing.unit);
@@ -258,7 +265,7 @@ export async function confirmMealAndConsume(entryId: string) {
         // Convert total pantry amount to base unit
         const totalBase = convertToBase(
           pantryData.quantity * pantryData.count,
-          pantryData.unit
+          pantryData.unit,
         );
 
         // Subtract
@@ -277,17 +284,19 @@ export async function confirmMealAndConsume(entryId: string) {
           "New total:",
           newTotal,
           "New count:",
-          newCount,"New quantity:",
-          newQuantity
+          newCount,
+          "New quantity:",
+          newQuantity,
         );
         // If total is less than one container
         if (newTotal < pantryData.quantity) {
           newCount = 0;
           newQuantity = newTotal; // whatever is left
         }
-
+        // Update pantry item
         tx.update(pantryDocRef, {
-          count: newTotal,
+          count: newCount,
+          quantity: newQuantity,
           lastUpdated: serverTimestamp(),
         });
 
@@ -295,7 +304,7 @@ export async function confirmMealAndConsume(entryId: string) {
         if (newTotalBase <= 0) {
           const itemName = pantryData.name ?? ing.name;
           const id = itemName.toLowerCase().replace(/\s+/g, "_");
-          const shopRef = doc(db, "shoppingList", id);
+          const shopRef = doc(db, "users", userId, "shoppingList", id);
 
           tx.set(
             shopRef,
@@ -306,7 +315,7 @@ export async function confirmMealAndConsume(entryId: string) {
               needed: true,
               updatedAt: serverTimestamp(),
             },
-            { merge: true }
+            { merge: true },
           );
         }
       }
