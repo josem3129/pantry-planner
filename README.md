@@ -65,6 +65,3 @@ This project uses the **Open Food Facts API**. To comply with their terms of use
 * **`lib/pantryActions.ts`**: Handles the server-side logic for "upserting" items—deciding whether to update an existing entry or create a new one based on barcode data.
 * **`components/ConfirmScannedItemModal.tsx`**: A controlled form that allows users to verify and edit API-fetched data before it is saved to the database.
 
----
-
-**Would you like me to add a "Troubleshooting" section specifically for the camera permissions and "Width 0" errors we solved?**
