@@ -240,7 +240,7 @@ export async function confirmMealAndConsume(userId: string, entryId: string) {
     // 🚫 NO WRITES HAVE HAPPENED YET — THIS IS REQUIRED
 
     // 4. ------ NOW WE PERFORM WRITES ------
-    debugger;
+
     for (const ing of recipe.ingredients) {
       let pantryDocRef: ReturnType<typeof doc> | null = null;
       let pantryData: PantryItem | null = null;
@@ -249,62 +249,35 @@ export async function confirmMealAndConsume(userId: string, entryId: string) {
         pantryDocRef = doc(db, "users", userId, "pantry", ing.pantryItemId);
         pantryData = pantryReadMap[ing.pantryItemId]!;
       }
+      // Inside the for loop for ingredients in confirmMealAndConsume
       if (pantryDocRef && pantryData) {
-        console.log(
-          "pantry ingredient:",
-          pantryDocRef,
-          "Pantry data:",
-          pantryData,
-          "Id:",
-          ing.pantryItemId,
-        );
-        // Convert pantry quantity to base unit
-        if (!ing.unit) throw new Error("Ingredient unit missing");
-        if (!pantryData.unit) throw new Error("Pantry unit missing");
+        if (!ing.unit || !pantryData.unit) throw new Error("Unit missing");
 
-        // Convert recipe ingredient quantity to base unit
-        const recipeBase = convertToBase(ing.quantity, ing.unit);
-
-        // Convert total pantry amount to base unit
-        const totalBase = convertToBase(
-          pantryData.quantity * pantryData.count,
+        // 1. Convert everything to base units (g, mL, etc.)
+        const recipeIngBase = convertToBase(ing.quantity, ing.unit);
+        const oneContainerBase = convertToBase(
+          pantryData.quantity,
           pantryData.unit,
         );
 
-        // Subtract
-        const newTotalBase = totalBase - recipeBase;
+        // 2. Calculate the current total base amount you have
+        const currentTotalBase = oneContainerBase * pantryData.count;
 
-        // Convert back to pantry unit
-        const newTotal = newTotalBase / UNIT_CONVERSIONS[pantryData.unit];
+        // 3. Subtract the recipe amount from the total
+        const remainingTotalBase = currentTotalBase - recipeIngBase;
 
-        // Now compute new container count and quantity
-        let newCount = Math.floor(newTotal / pantryData.quantity);
-        let newQuantity = newTotal % pantryData.quantity;
+        // 4. Calculate the new count (decimal) based on the fixed container size
+        // This keeps the 'quantity' field static and only moves the 'count'
+        const newCount = remainingTotalBase / oneContainerBase;
 
-        console.log(
-          "New total base",
-          newTotalBase,
-          "New total:",
-          newTotal,
-          "New count:",
-          newCount,
-          "New quantity:",
-          newQuantity,
-        );
-        // If total is less than one container
-        if (newTotal < pantryData.quantity) {
-          newCount = 0;
-          newQuantity = newTotal; // whatever is left
-        }
-        // Update pantry item
+        // 5. Update Firestore
         tx.update(pantryDocRef, {
-          count: newCount,
-          // quantity: newQuantity,
+          count: newCount > 0 ? newCount : 0, // Prevent negative counts
           lastUpdated: serverTimestamp(),
         });
 
-        // If empty or negative → shopping list
-        if (newTotalBase <= 0) {
+        // 6. Handle Shopping List if depleted
+        if (remainingTotalBase <= 0) {
           const itemName = pantryData.name ?? ing.name;
           const id = itemName.toLowerCase().replace(/\s+/g, "_");
           const shopRef = doc(db, "users", userId, "shoppingList", id);
@@ -313,7 +286,7 @@ export async function confirmMealAndConsume(userId: string, entryId: string) {
             shopRef,
             {
               item_name: itemName,
-              unit: pantryData.unit ?? ing.unit ?? "",
+              unit: pantryData.unit,
               quantity: 1,
               needed: true,
               updatedAt: serverTimestamp(),

@@ -209,7 +209,7 @@ export default function PantryPage() {
               <tr className="border-b text-gray-700 font-demibold">
                 <th className="py-2">Item</th>
                 <th className="py-2">count</th>
-                <th className="py-2">Quantity</th>
+                <th className="py-2">Net WT</th>
                 <th className="py-2">Unit</th>
                 <th className="py-2 text-right">Actions</th>
               </tr>
