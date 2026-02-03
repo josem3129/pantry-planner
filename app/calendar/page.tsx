@@ -21,9 +21,8 @@ type MealType = "breakfast" | "lunch" | "dinner";
 /* ---------------- Page ---------------- */
 export default function MealPlannerPage() {
   const [viewMode, setViewMode] = useState<"B" | "C">("B");
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const userId = user?.uid || "";
-
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [entries, setEntries] = useState<CalendarEntry[]>([]);
   const today = isoToday();
@@ -45,7 +44,7 @@ export default function MealPlannerPage() {
   useEffect(() => {
      if (!userId) return;
     return subscribeToRecipes(userId, setRecipes);
-  }, []);
+  }, [userId]);
 
   /* --- Calendar entries (WHOLE WEEK) --- */
   useEffect(() => {
@@ -59,7 +58,7 @@ export default function MealPlannerPage() {
       })
     );
     return () => unsubs.forEach((u) => u());
-  }, [week]);
+  }, [userId, week]);
 
   return (
     <div className="p-4 max-w-6xl mx-auto">
@@ -287,7 +286,7 @@ function AddMealPanel({
   onAdd,
 }: {
   recipes: Recipe[];
-  onAdd: (data: { date: string; meal: MealType; recipeId: string }) => void;
+  onAdd: (data: { date: string; meal: MealType; recipeId: string;}) => void;
 }) {
   const [date, setDate] = useState(isoToday());
   const [meal, setMeal] = useState<MealType>("breakfast");

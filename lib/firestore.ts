@@ -115,6 +115,7 @@ export function subscribeToRecipes(
   callback: (recipes: Recipe[]) => void,
 ): Unsubscribe {
   return onSnapshot(query(recipesCol(userId), orderBy("title")), (snap) => {
+    debugger;
     callback(
       snap.docs.map((d) => ({
         id: d.id,
@@ -183,7 +184,8 @@ export async function addOrMarkShoppingItem(
   );
 }
 // Confirm meal and consume pantry items transactionally
-export async function confirmMealAndConsume(entryId: string, userId: string) {
+export async function confirmMealAndConsume(userId: string, entryId: string) {
+  debugger;
   const entryRef = doc(db, "users", userId, "calendar", entryId);
   const UNIT_CONVERSIONS: Record<string, number> = {
     // Volume (base: milliliter)
@@ -238,6 +240,7 @@ export async function confirmMealAndConsume(entryId: string, userId: string) {
     // 🚫 NO WRITES HAVE HAPPENED YET — THIS IS REQUIRED
 
     // 4. ------ NOW WE PERFORM WRITES ------
+    debugger;
     for (const ing of recipe.ingredients) {
       let pantryDocRef: ReturnType<typeof doc> | null = null;
       let pantryData: PantryItem | null = null;
@@ -296,7 +299,7 @@ export async function confirmMealAndConsume(entryId: string, userId: string) {
         // Update pantry item
         tx.update(pantryDocRef, {
           count: newCount,
-          quantity: newQuantity,
+          // quantity: newQuantity,
           lastUpdated: serverTimestamp(),
         });
 

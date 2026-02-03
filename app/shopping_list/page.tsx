@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { subscribeToPantry, PantryItem } from "@/lib/firestore";
 import { useAuth } from "@/lib/useAuth";
+import { User } from "lucide-react";
 
 export default function ShoppingListPage() {
   const [items, setItems] = useState<PantryItem[]>([]);
@@ -17,7 +18,7 @@ export default function ShoppingListPage() {
       );
       setItems(needsRestock);
     });
-  }, []);
+  }, [userId]);
 
   return (
     <div className="p-4 max-w-3xl mx-auto">
@@ -35,7 +36,7 @@ export default function ShoppingListPage() {
               <div>
                 <div className="font-semibold">{item.name}</div>
                 <div className="text-sm text-gray-500">
-                  Current: {item.quantity} {item.unit ?? ""}
+                  Current: {item.count} {item.unit ?? ""}
                 </div>
               </div>
 

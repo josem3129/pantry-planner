@@ -11,6 +11,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  
 
   useEffect(() => {
     const unsub = subscribeToAuthChanges((u) => {
