@@ -42,20 +42,20 @@ export default function MealPlannerPage() {
 
   /* --- Recipes --- */
   useEffect(() => {
-     if (!userId) return;
+    if (!userId) return;
     return subscribeToRecipes(userId, setRecipes);
   }, [userId]);
 
   /* --- Calendar entries (WHOLE WEEK) --- */
   useEffect(() => {
-     if (!userId) return;
+    if (!userId) return;
     const unsubs = week.map((d) =>
       subscribeToCalendarDate(userId, d.iso, (dayEntries: CalendarEntry[]) => {
         setEntries((prev) => [
           ...prev.filter((e) => e.date !== d.iso),
           ...dayEntries,
         ]);
-      })
+      }),
     );
     return () => unsubs.forEach((u) => u());
   }, [userId, week]);
@@ -65,17 +65,17 @@ export default function MealPlannerPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Meal Planner</h1>
-          <AddMealPanel
-            recipes={recipes}
-            onAdd={(data) => addCalendarEntry(userId, data)}
-          />
+        <AddMealPanel
+          recipes={recipes}
+          onAdd={(data) => addCalendarEntry(userId, data)}
+        />
 
         <div className="hidden md:flex md:flex-col-reverse gap-2 items-end">
           <button
             onClick={() => setViewMode("B")}
             className={cn(
               "px-3 py-1 rounded border flex gap-1 items-center",
-              viewMode === "B" ? "bg-blue-600 text-white" : "bg-white"
+              viewMode === "B" ? "bg-blue-600 text-white" : "bg-white",
             )}
           >
             <List size={18} />
@@ -86,7 +86,7 @@ export default function MealPlannerPage() {
             onClick={() => setViewMode("C")}
             className={cn(
               "px-3 py-1 rounded border flex gap-1 items-center",
-              viewMode === "C" ? "bg-blue-600 text-white" : "bg-white"
+              viewMode === "C" ? "bg-blue-600 text-white" : "bg-white",
             )}
           >
             <LayoutGrid size={18} />
@@ -103,10 +103,20 @@ export default function MealPlannerPage() {
       {/* Desktop */}
       <div className="hidden md:block">
         {viewMode === "B" && (
-          <DesktopDayView userId={userId} date={today} recipes={recipes} entries={entries} />
+          <DesktopDayView
+            userId={userId}
+            date={today}
+            recipes={recipes}
+            entries={entries}
+          />
         )}
         {viewMode === "C" && (
-          <DesktopWeekView userId={userId} recipes={recipes} entries={entries} week={week} />
+          <DesktopWeekView
+            userId={userId}
+            recipes={recipes}
+            entries={entries}
+            week={week}
+          />
         )}
       </div>
     </div>
@@ -124,23 +134,21 @@ function MobileView({
   week: { iso: string; label: string }[];
 }) {
   return (
-    (
-      <div className="space-y-3">
-        {week.map((d) => (
-          <div key={d.iso} className="bg-white p-3 rounded shadow">
-            <h3 className="font-bold">{d.label}</h3>
-            {entriesForDate(entries, d.iso).map((e) => {
-              const r = recipes.find((x) => x.id === e.recipeId);
-              return (
-                <div key={e.id} className="text-sm text-gray-600">
-                  {capitalize(e.meal)} — {r?.title}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    )
+    <div className="space-y-3">
+      {week.map((d) => (
+        <div key={d.iso} className="bg-white p-3 rounded shadow">
+          <h3 className="font-bold">{d.label}</h3>
+          {entriesForDate(entries, d.iso).map((e) => {
+            const r = recipes.find((x) => x.id === e.recipeId);
+            return (
+              <div key={e.id} className="text-sm text-gray-600">
+                {capitalize(e.meal)} — {r?.title}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -231,7 +239,7 @@ function DesktopWeekView({
 
             {(["breakfast", "lunch", "dinner"] as MealType[]).map((meal) => {
               const mealEntry = entriesForDate(entries, d.iso).find(
-                (e) => e.meal === meal
+                (e) => e.meal === meal,
               );
               const recipe = recipes.find((r) => r.id === mealEntry?.recipeId);
 
@@ -250,14 +258,18 @@ function DesktopWeekView({
                       {!mealEntry.confirmed && (
                         <div className="flex flex-col gap-2 mt-2 w-full">
                           <button
-                            onClick={() => confirmMealAndConsume(userId, mealEntry.id)}
+                            onClick={() =>
+                              confirmMealAndConsume(userId, mealEntry.id)
+                            }
                             className="flex-1 px-2 py-1 text-xs bg-green-600 text-white rounded-full hover:bg-green-700"
                           >
                             Confirm
                           </button>
 
                           <button
-                            onClick={() => deleteCalendarEntry(userId, mealEntry.id)}
+                            onClick={() =>
+                              deleteCalendarEntry(userId, mealEntry.id)
+                            }
                             className="flex-1 px-2 py-1 text-xs border border-red-300 text-red-600 rounded-full hover:bg-red-50"
                           >
                             Cancel
@@ -286,7 +298,7 @@ function AddMealPanel({
   onAdd,
 }: {
   recipes: Recipe[];
-  onAdd: (data: { date: string; meal: MealType; recipeId: string;}) => void;
+  onAdd: (data: { date: string; meal: MealType; recipeId: string }) => void;
 }) {
   const [date, setDate] = useState(isoToday());
   const [meal, setMeal] = useState<MealType>("breakfast");
@@ -294,44 +306,54 @@ function AddMealPanel({
 
   return (
     <div className="p-4 border rounded-lg bg-white shadow mb-6">
-      <h3 className="font-bold mb-2">Add Meal</h3>
+      <h3 className="font-bold mb-3 text-lg">Add Meal</h3>
+      <div className="flex flex-col md:grid md:grid-cols-3 gap-3">
+        <div className="flex flex-col">
+          <label className="text-xs text-gray-500 mb-1 md:hidden">Date</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="border p-2 rounded w-full h-10"
+          />
+        </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="border p-1 rounded"
-        />
+        <div className="flex flex-col">
+          <label className="text-xs text-gray-500 mb-1 md:hidden">
+            Meal Time
+          </label>
+          <select
+            value={meal}
+            onChange={(e) => setMeal(e.target.value as MealType)}
+            className="border p-2 rounded w-full h-10 bg-white"
+          >
+            <option value="breakfast">Breakfast</option>
+            <option value="lunch">Lunch</option>
+            <option value="dinner">Dinner</option>
+          </select>
+        </div>
 
-        <select
-          value={meal}
-          onChange={(e) => setMeal(e.target.value as MealType)}
-          className="border p-1 rounded"
-        >
-          <option value="breakfast">Breakfast</option>
-          <option value="lunch">Lunch</option>
-          <option value="dinner">Dinner</option>
-        </select>
-
-        <select
-          value={recipeId}
-          onChange={(e) => setRecipeId(e.target.value)}
-          className="border p-1 rounded"
-        >
-          <option value="">Select Recipe</option>
-          {recipes.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.title}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-col">
+          <label className="text-xs text-gray-500 mb-1 md:hidden">Recipe</label>
+          <select
+            value={recipeId}
+            onChange={(e) => setRecipeId(e.target.value)}
+            className="border p-2 rounded w-full h-10 bg-white"
+          >
+            <option value="">Select Recipe</option>
+            {recipes.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.title}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <button
         disabled={!recipeId}
         onClick={() => onAdd({ date, meal, recipeId })}
-        className="mt-3 px-4 py-1 bg-blue-600 text-white rounded-full disabled:opacity-50"
+        className="mt-4 w-full md:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg md:rounded-full font-medium disabled:opacity-50 transition-colors"
       >
         + Add Meal
       </button>
