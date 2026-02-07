@@ -4,7 +4,7 @@ import { DecodeHintType, BarcodeFormat } from "@zxing/library";
 
 export function UseBarcodeScanner(
   onDetected: (barcode: string) => void,
-  active: boolean
+  active: boolean,
 ) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
@@ -63,8 +63,38 @@ export function UseBarcodeScanner(
               const code = result.getText();
               onDetected(code);
             }
-          }
+          },
         );
+
+        if (!videoRef.current.srcObject) return;
+        const stream = videoRef.current.srcObject as MediaStream;
+        // Define the missing properties for the MediaTrack API
+        interface ExtendedMediaTrackCapabilities extends MediaTrackCapabilities {
+          focusMode?: string[];
+        }
+
+        interface ExtendedMediaTrackConstraints extends MediaTrackConstraintSet {
+          focusMode?: string;
+        }
+
+        // ... inside your setupCamera function
+        if (stream) {
+          const track = stream.getVideoTracks()[0];
+
+          // Cast the capabilities to our extended interface
+          const capabilities =
+            track.getCapabilities() as ExtendedMediaTrackCapabilities;
+
+          if (capabilities.focusMode?.includes("continuous")) {
+            const constraints: MediaTrackConstraints = {
+              advanced: [
+                { focusMode: "continuous" } as ExtendedMediaTrackConstraints,
+              ],
+            };
+
+            await track.applyConstraints(constraints);
+          }
+        }
 
         controlsRef.current = controls;
       } catch (err) {
@@ -76,27 +106,25 @@ export function UseBarcodeScanner(
     setupCamera();
 
     return () => {
-  console.log("Cleaning up camera...");
-  if (controlsRef.current) {
-    controlsRef.current.stop();
-    controlsRef.current = null;
-  }
-  
-  if (videoRef.current) {
-    const stream = videoRef.current.srcObject as MediaStream;
-    if (stream) {
-      // Forcefully kill every track
-      stream.getTracks().forEach((track) => {
-        track.stop();
-        track.enabled = false; // Extra safety
-      });
-    }
-    videoRef.current.srcObject = null; // Break the DOM link
-    videoRef.current.load(); // Forces the video element to reset
-    
-    
-  }
-};
+      console.log("Cleaning up camera...");
+      if (controlsRef.current) {
+        controlsRef.current.stop();
+        controlsRef.current = null;
+      }
+
+      if (videoRef.current) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        if (stream) {
+          // Forcefully kill every track
+          stream.getTracks().forEach((track) => {
+            track.stop();
+            track.enabled = false; // Extra safety
+          });
+        }
+        videoRef.current.srcObject = null; // Break the DOM link
+        videoRef.current.load(); // Forces the video element to reset
+      }
+    };
   }, [active, onDetected]);
 
   return { videoRef };
