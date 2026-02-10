@@ -82,17 +82,20 @@ export default function PantryPage() {
     });
     setNewItem({ name: "", quantity: "", unit: "", count: "" });
   }
-
+  //handle updating quantity, count, and deleting items
   async function handleUpdateQuantity(id: string, qty: number) {
     await updatePantryItem(userId, id, { quantity: qty });
   }
-
+  //handle updating count
   async function handleUpdateCount(id: string, count: number) {
     await updatePantryItem(userId, id, { count: count });
   }
+  //handle deleting items
   async function handleDelete(id: string) {
     await deletePantryItem(userId, id);
   }
+  // When a scanned item is confirmed, we upsert it into the pantry. 
+  // The upsert function will handle both creating a new item or updating an existing one based on the barcode.
   async function handleConfirm(item: ScannedItemDraft) {
     try {
       await upsertPantryItem(userId, {
@@ -100,7 +103,6 @@ export default function PantryPage() {
         count: item.count,
         quantity: item.quantity ?? 0,
         unit: item.units ?? "pcs",
-        // 🛡️ Fix: convert null to undefined
         barcode: item.barcode || undefined,
       });
 
@@ -109,6 +111,8 @@ export default function PantryPage() {
       console.error("Error saving to pantry:", error);
     }
   }
+  // The main return block renders the pantry inventory UI, including the add item form, the list of pantry items, 
+  // and conditionally renders the barcode scanner and confirmation modal based on user interactions.
   return (
     <div className="max-w-3xl mx-auto p6">
       <h1 className="text-3xl font-bold mb-6">Pantry Inventory</h1>

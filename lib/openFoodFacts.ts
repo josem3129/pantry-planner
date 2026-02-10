@@ -5,7 +5,9 @@ export interface FoodProduct {
     quantity?: number;
     unit?: string;
 }
-
+// The lookupProductByBarcode function takes a barcode as input and queries the Open Food Facts API to retrieve product information. 
+// It returns a FoodProduct object containing details such as the product name, brand, quantity, and unit if the product is found, 
+// or null if the product is not found or if an error occurs during the fetch operation.
 export async function lookupProductByBarcode(barcode: string): Promise<FoodProduct | null> {
   try {
     // 1. Use the Production API URL (v2)

@@ -2,6 +2,9 @@ import { useEffect, useRef } from "react";
 import { BrowserMultiFormatReader, IScannerControls } from "@zxing/browser";
 import { DecodeHintType, BarcodeFormat } from "@zxing/library";
 
+// The UseBarcodeScanner hook encapsulates the logic for initializing the camera, handling barcode detection,
+// and cleaning up resources when the component using it is unmounted or when scanning is deactivated.
+//  It returns a ref for the video element that will display the camera feed, allowing the parent component to integrate barcode scanning functionality seamlessly.
 export function UseBarcodeScanner(
   onDetected: (barcode: string) => void,
   active: boolean,
@@ -65,7 +68,7 @@ export function UseBarcodeScanner(
             }
           },
         );
-
+        // Attempt to set continuous autofocus if supported
         if (!videoRef.current.srcObject) return;
         const stream = videoRef.current.srcObject as MediaStream;
         // Define the missing properties for the MediaTrack API
@@ -104,14 +107,14 @@ export function UseBarcodeScanner(
     }
 
     setupCamera();
-
+    // Cleanup function to stop the camera when the component unmounts or when active becomes false
     return () => {
       console.log("Cleaning up camera...");
       if (controlsRef.current) {
         controlsRef.current.stop();
         controlsRef.current = null;
       }
-
+      // Forcefully stop any active stream on the video element
       if (videoRef.current) {
         const stream = videoRef.current.srcObject as MediaStream;
         if (stream) {

@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { UseBarcodeScanner } from "@/hooks/useBarcodeScanner";
 import { lookupProductByBarcode } from "@/lib/openFoodFacts";
 
+// Define the structure of the product data we expect to receive after scanning a barcode
 export interface ScannedProductData {
   barcode: string;
   name: string;
@@ -13,11 +14,13 @@ export interface ScannedProductData {
   brand?: string;
 }
 
+// Define the props for the BarcodeScanner component, including callbacks for closing the scanner and handling successful scans
 type BarcodeScannerProps = {
   onClose: () => void;
   onSuccess: (productData: ScannedProductData) => void;
 };
 
+// The BarcodeScanner component provides a user interface for scanning barcodes using the device's camera. It handles the scanning process, looks up product information based on the scanned barcode, and communicates results back to the parent component through callbacks.
 export default function BarcodeScanner({
   onClose,
   onSuccess,
@@ -51,6 +54,7 @@ export default function BarcodeScanner({
     [scanning, onSuccess],
   );
 
+// The videoRef is used to display the camera feed, and the onDetected callback is triggered when a barcode is successfully scanned. The component also includes a visual overlay to guide users in positioning the barcode correctly within the camera frame.
   const { videoRef } = UseBarcodeScanner(onDetected, scanning);
   return (
     <div className="space-y-4">

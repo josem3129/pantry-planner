@@ -46,7 +46,7 @@ export default function ConfirmScannedItemModal({
 
   console.log("Current values:", { name, count, quantity, unit });
   const canConfirm = name.trim().length > 0 && count >= 1;
-
+// The handleConfirm function is responsible for invoking the onConfirm callback with the current state of the scanned item. It constructs an object that includes the name, count, quantity, unit, and barcode (if available) and passes it to the parent component for further processing, such as adding the item to the pantry list.
 function handleConfirm() {
   onConfirm({
     // Use the local state variables, NOT the initial props

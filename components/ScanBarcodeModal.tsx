@@ -7,12 +7,16 @@ import {
   IScannerControls,
 } from "@zxing/browser";
 
+// props for the ScanBarcodeModal component, including whether the modal is open, a callback for closing the modal, and an optional callback for when a barcode is detected
 type Props = {
   open: boolean;
   onClose: () => void;
   onDetected?: (barcode: string) => void;
 };
 
+// The ScanBarcodeModal component provides a user interface for scanning barcodes using the device's camera.
+//  It manages the camera lifecycle, handles barcode detection, and displays relevant status messages to the user. 
+// The component uses the @zxing/browser library to access the camera and decode barcodes in real-time.
 export default function ScanBarcodeModal({ open, onClose, onDetected }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
@@ -75,6 +79,7 @@ export default function ScanBarcodeModal({ open, onClose, onDetected }: Props) {
 
   if (!open) return null;
 
+  /* ---------------- UI ---------------- */
   return (
     <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       {/* Overlay */}
